@@ -12,8 +12,7 @@ function detect() {
   } catch {
     /* storage unavailable */
   }
-  const nav = typeof navigator !== 'undefined' ? navigator.language : 'pt'
-  return /^pt\b/i.test(nav) ? 'pt' : 'en'
+  return 'en'
 }
 
 const state = reactive({ locale: detect() })
@@ -51,7 +50,7 @@ function fill(str, params) {
 
 export function t(key, params) {
   let value = pick(messages[state.locale], key)
-  if (value === undefined) value = pick(messages.pt, key)
+  if (value === undefined) value = pick(messages.en, key)
   if (value === undefined) {
     console.warn(`[i18n] missing key: ${key}`)
     return key
