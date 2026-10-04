@@ -39,6 +39,15 @@ import { t } from '../../i18n'
       filename="void.amt"
     />
 
+    <h2>{{ t('types.h2_struct') }}</h2>
+    <p v-html="t('types.struct_p')"></p>
+    <CodeBlock
+      :code="t('code.types_struct')"
+      filename="structs.amt"
+    />
+    <ul v-html="t('types.struct_list')"></ul>
+    <div class="callout" v-html="t('types.null_callout')"></div>
+
     <h2>{{ t('types.h2_arrays') }}</h2>
     <p v-html="t('types.arrays_p')"></p>
     <CodeBlock
@@ -54,6 +63,10 @@ import { t } from '../../i18n'
       filename="slices.amt"
     />
     <ul v-html="t('types.slices_list')"></ul>
+    <CodeBlock
+      :code="t('code.types_heap')"
+      filename="heap.amt"
+    />
 
     <h2>{{ t('types.h2_strings') }}</h2>
     <p v-html="t('types.strings_p')"></p>

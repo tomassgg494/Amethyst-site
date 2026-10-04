@@ -19,7 +19,10 @@ import { t } from '../../i18n'
     <CodeBlock :code="`x = x + 1;\nx += 5;     // compound: x = x + 5`" filename="assign.amt" />
     <p v-html="t('stmt.assign_p')"></p>
     <p v-html="t('stmt.assign_arr')"></p>
-    <CodeBlock :code="`nums[2] = 99;\nnums[2] += 1;`" filename="assign-index.amt" />
+    <CodeBlock
+      :code="`nums[2] = 99;\nnums[2] += 1;\n\np.x = 10;    // struct field\np.x += 1;`"
+      filename="assign-index.amt"
+    />
 
     <h2>{{ t('stmt.h2_block') }}</h2>
     <p v-html="t('stmt.block_p')"></p>
@@ -75,6 +78,14 @@ import { t } from '../../i18n'
       filename="print.amt"
     />
     <p v-html="t('stmt.print_escapes')"></p>
+
+    <h2>{{ t('stmt.h2_free') }}</h2>
+    <p v-html="t('stmt.free_p')"></p>
+    <CodeBlock
+      :code="t('code.stmt_free')"
+      filename="free.amt"
+    />
+    <ul v-html="t('stmt.free_list')"></ul>
 
     <h2>{{ t('stmt.h2_expr') }}</h2>
     <p v-html="t('stmt.expr_p')"></p>

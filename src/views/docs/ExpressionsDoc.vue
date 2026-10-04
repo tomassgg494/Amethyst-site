@@ -58,6 +58,13 @@ import { t } from '../../i18n'
     <p v-html="t('expr.index_p')"></p>
     <div class="callout" v-html="t('expr.index_callout')"></div>
 
+    <h2>{{ t('expr.h2_field') }}</h2>
+    <p v-html="t('expr.field_p')"></p>
+    <CodeBlock
+      :code="t('code.expr_field')"
+      filename="field.amt"
+    />
+
     <h2>{{ t('expr.h2_strings') }}</h2>
     <p v-html="t('expr.strings_p')"></p>
     <CodeBlock

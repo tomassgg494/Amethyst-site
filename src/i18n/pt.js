@@ -118,14 +118,16 @@ zero de interpretação — assembly GAS, <code>as</code> e
       velocidade e previsibilidade. A sintaxe fica a meio caminho entre
       linguagens high-level (Python, JavaScript) e low-level (C, C++):
       chaves, ponto-e-vírgula, tipos explícitos, sem magia.`,
-    callout: `<strong>v1.1 atual:</strong> <code>int</code>, <code>bool</code>,
+    callout: `<strong>A linguagem hoje:</strong> <code>int</code>, <code>bool</code>,
       <code>float</code> e <code>string</code>, arrays de tamanho fixo
-      <code>int[N]</code>/<code>bool[N]</code> e parâmetros de array
-      <code>int[]</code>/<code>bool[]</code> (ambos com bounds check), atribuição
-      composta, <code>len()</code>, funções, <code>if</code>,
-      <code>while</code>, <code>for</code> ranges, <code>break</code>/<code>continue</code>,
-      variáveis com inferência e análise de definite assignment, e
-      <code>print</code>. Compilador em C++17, backend GAS x86-64.`,
+      <code>T[N]</code> e slices <code>T[]</code> (ambos com bounds check),
+      <strong>structs</strong> no heap com <code>new P { … }</code> e
+      <code>null</code>, arrays dinâmicos <code>new T[n]</code> com
+      <code>free</code>, atribuição composta, <code>len()</code>, funções,
+      <code>if</code>, <code>while</code>, <code>for</code> ranges,
+      <code>break</code>/<code>continue</code>, variáveis com inferência e
+      análise de definite assignment, e <code>print</code>. Compilador em
+      C++17, backend GAS x86-64.`,
     hello: 'Olá, Amethyst',
     features: 'Caraterísticas',
     features_list: `<li><strong>Compilada</strong> — pipeline <code>.amt → .s → .o → binário</code></li>
@@ -137,7 +139,7 @@ zero de interpretação — assembly GAS, <code>as</code> e
     next_beginners: 'se estás a começar, vai direto aqui',
     next_install: 'build em segundos',
     next_syntax: 'visão geral da linguagem',
-    next_types: 'int, float, bool, strings, arrays e slices',
+    next_types: 'int, float, bool, strings, arrays, slices e structs',
     next_statements: 'statements',
     next_compiler: 'como funciona por baixo',
   },
@@ -227,7 +229,8 @@ zero de interpretação — assembly GAS, <code>as</code> e
       <strong>ponto-e-vírgula</strong> para terminar statements — o mesmo
       esqueleto de C/JS/Java, com keywords curtas e tipos explícitos.`,
     h2_structure: 'Estrutura de um programa',
-    structure_p: `Um ficheiro é uma sequência de declarações de função. O ponto de entrada
+    structure_p: `Um ficheiro é uma sequência de declarações de função e de struct
+      (uma struct pode ser usada antes de ser declarada). O ponto de entrada
       é obrigatoriamente:`,
     structure_list: `<li>sem parâmetros</li>
       <li>retorna <code>int</code> (o exit code do processo)</li>`,
@@ -235,7 +238,8 @@ zero de interpretação — assembly GAS, <code>as</code> e
     fn_p: `Parâmetros usam <code>nome: tipo</code>. O operador <code>-&gt;</code>
       liga a assinatura ao corpo. Até 6 parâmetros inteiros (ou 8
       <code>float</code>) vão por registo (SysV); um parâmetro de array ocupa
-      dois registos inteiros, e o que não couber vai pela stack.`,
+      dois registos inteiros, uma struct ocupa um (é uma única referência), e
+      o que não couber vai pela stack.`,
     h2_ident: 'Identificadores',
     ident_list: `<li>Começam por letra ou <code>_</code></li>
       <li>Seguidos de letras, dígitos ou <code>_</code></li>
@@ -247,6 +251,7 @@ zero de interpretação — assembly GAS, <code>as</code> e
       </thead>
       <tbody>
         <tr><td><code>fn</code></td><td>declaração de função</td></tr>
+        <tr><td><code>struct</code></td><td>declaração de struct: <code>struct P { x: int, y: float }</code></td></tr>
         <tr><td><code>var</code></td><td>variável local; o tipo é opcional quando há inicializador</td></tr>
         <tr><td><code>return</code></td><td>devolver valor (ou sair)</td></tr>
         <tr><td><code>if</code> / <code>else</code></td><td>condição (<code>bool</code>)</td></tr>
@@ -255,8 +260,12 @@ zero de interpretação — assembly GAS, <code>as</code> e
         <tr><td><code>break</code></td><td>sair do loop atual</td></tr>
         <tr><td><code>continue</code></td><td>próxima iteração do loop atual</td></tr>
         <tr><td><code>print</code></td><td>imprimir <code>int</code>, <code>bool</code>, <code>float</code> ou <code>string</code></td></tr>
-        <tr><td><code>int</code> / <code>bool</code> / <code>float</code> / <code>string</code> / <code>void</code></td><td>tipos</td></tr>
+        <tr><td><code>new</code></td><td>alocação no heap: <code>new P { … }</code> ou <code>new T[n]</code></td></tr>
+        <tr><td><code>free</code></td><td>libertar um objeto do heap ou um array criado com <code>new</code></td></tr>
+        <tr><td><code>int</code> / <code>bool</code> / <code>float</code> / <code>string</code> / <code>void</code></td><td>tipos escalares</td></tr>
+        <tr><td><code>Point</code> / <code>Point[]</code> / <code>Point[N]</code></td><td>um tipo struct, e as suas formas slice / array fixo</td></tr>
         <tr><td><code>true</code> / <code>false</code></td><td>literais bool</td></tr>
+        <tr><td><code>null</code></td><td>a referência a "nada" (só em slots de struct)</td></tr>
       </tbody>
     </table>`,
     h2_comments: 'Comentários',
@@ -266,8 +275,9 @@ zero de interpretação — assembly GAS, <code>as</code> e
 
   types: {
     title: 'Tipos',
-    intro: `A v1.1 é pequena de propósito: quatro tipos escalares, arrays de
-      tamanho fixo e slices de array. <strong>Não há conversões implícitas</strong>
+    intro: `A linguagem é pequena de propósito: quatro tipos escalares, structs
+      que vivem no heap, e arrays que são fixos na stack ou criados com
+      <code>new</code>. <strong>Não há conversões implícitas</strong>
       entre <code>int</code>, <code>bool</code>, <code>float</code> e
       <code>string</code> — escreve <code>float(n)</code> ou <code>int(x)</code>
       para mover entre os dois tipos numéricos.`,
@@ -295,9 +305,11 @@ zero de interpretação — assembly GAS, <code>as</code> e
     h2_void: 'void',
     void_p: `Só como tipo de retorno de funções sem valor. Não pode ser usado em
       <code>var</code>, nem em expressões.`,
-    h2_arrays: 'Arrays — int[N] / bool[N]',
+    h2_arrays: 'Arrays fixos — T[N]',
     arrays_p: `Arrays de tamanho fixo, alocados na stack. O tamanho <code>N</code> é
-      um literal inteiro (<code>1</code> a <code>10 000 000</code>). O
+      um literal inteiro (<code>1</code> a <code>10 000 000</code>). O tipo
+      do elemento <code>T</code> pode ser <code>int</code>, <code>bool</code>,
+      <code>float</code>, <code>string</code> ou uma struct. O
       inicializador é um literal de array com exactamente <code>N</code>
       elementos do tipo do elemento.`,
     arrays_list: `<li>Leitura <code>a[i]</code> e escrita <code>a[i] = expr;</code></li>
@@ -305,16 +317,41 @@ zero de interpretação — assembly GAS, <code>as</code> e
         <strong>Bounds check em runtime:</strong> índice fora de
         <code>[0, N)</code> imprime mensagem de erro e sai com código 1
       </li>
-      <li>Não se pode atribuir ao array inteiro nem comparar arrays — mas podes passá-los a uma função como slice</li>`,
-    h2_slices: 'Parâmetros de array — int[] / bool[]',
-    slices_p: `Um parâmetro declarado <code>int[]</code> ou <code>bool[]</code>
-      recebe o array do chamador como <strong>ponteiro + comprimento</strong>:
-      partilha o mesmo armazenamento, pelo que o callee pode escrever por ele,
-      e <code>len()</code> funciona em runtime.`,
+      <li>Não se pode atribuir ao array inteiro nem comparar arrays — mas podes passá-los a uma função como slice</li>
+      <li>Nada a <code>free</code>: o bloco faz parte do frame (só objetos do heap <em>dentro</em> dele precisam de <code>free</code>)</li>`,
+    h2_slices: 'Slices e arrays dinâmicos — T[]',
+    slices_p: `Uma variável ou parâmetro declarado <code>T[]</code> carrega um
+      <strong>ponteiro + comprimento</strong> — o comprimento é conhecido em
+      runtime, pelo que não há tamanho no tipo. Como <em>parâmetro</em> faz
+      alias do array do chamador (o callee pode escrever por ele e
+      <code>len()</code> funciona); como <em>local</em> vem de
+      <code>new T[n]</code>.`,
     slices_list: `<li><code>fn total(a: int[]) -&gt; int</code> — sem tamanho na assinatura</li>
-      <li><code>for i in 0..len(a)</code> — o comprimento é conhecido em runtime</li>
-      <li>O bounds check usa esse comprimento em runtime, não um de compile-time</li>
-      <li>Só <code>int[]</code> / <code>bool[]</code>: um array local continua a precisar de tamanho fixo</li>`,
+      <li><code>var a: int[] = new int[n];</code> — <code>n</code> é qualquer expressão <code>int</code>, lida uma vez</li>
+      <li>Os elementos começam a zero (<code>calloc</code>), logo <code>print(a[3]);</code> imprime <code>0</code></li>
+      <li><code>free(a);</code> liberta o bloco, repõe o comprimento a 0 e anula o ponteiro — um segundo <code>free</code> não faz nada</li>
+      <li><code>T[]</code> funciona para qualquer tipo de elemento: <code>int[]</code>, <code>float[]</code>, <code>string[]</code>, <code>Point[]</code></li>`,
+    h2_struct: 'Structs — objetos no heap',
+    struct_p: `Uma <strong>struct</strong> declara uma lista nomeada de campos.
+      Os objetos vivem no heap e uma variável guarda uma <em>referência</em>
+      para eles — uma única palavra — logo atribuir ou passar uma struct
+      partilha o objeto em vez de o copiar: uma escrita através da referência
+      é vista por todos os que a guardam.`,
+    struct_list: `<li><code>struct P { x: int, y: float }</code> — campos separados por vírgula no formato <code>nome: tipo</code></li>
+      <li><code>var p = new P { x: 10, y: 2.5 };</code> — todos os campos exactamente uma vez, em <strong>qualquer ordem</strong></li>
+      <li>Leitura com <code>p.x</code>, escrita com <code>p.x = expr;</code> (também <code>p.x += 1;</code>)</li>
+      <li>Tipos de campo: <code>int</code>, <code>bool</code>, <code>float</code>, <code>string</code> ou outra struct — assim <code>struct Node { next: Node }</code> constrói uma lista</li>
+      <li>Uma struct pode ser usada antes de ser declarada, e serve em qualquer sitio onde se espera um tipo: variáveis, parâmetros, retornos e arrays</li>`,
+    null_callout: `<strong>Null e free:</strong> uma variável de struct pode ser
+      <code>null</code> (sem objecto); ler um campo de <code>null</code>
+      pára o programa com
+      <code>Amethyst runtime error: null reference (…)</code>, e
+      <code>p == null</code> / <code>p != null</code> é a única comparação
+      entre structs. <code>free(p);</code> liberta o objecto e deixa
+      <code>p</code> a null, pelo que um segundo <code>free</code> não faz
+      nada. Cada objecto precisa de exactamente um <code>free</code> — ainda
+      não há coletor, e outras variáveis que continuem a apontar para um
+      objecto libertado ficam <em>dangling</em>.`,
     h2_strings: 'Strings',
     strings_p: `Literais entre aspas duplas com escapes <code>\\n</code>,
       <code>\\t</code>, <code>&quot;</code> e <code>\\\\</code>. Um
@@ -347,7 +384,7 @@ zero de interpretação — assembly GAS, <code>as</code> e
         </tr>
         <tr>
           <td><code>== !=</code></td>
-          <td>dois valores do mesmo tipo escalar (<code>int</code>/<code>bool</code>/<code>float</code>) ou dois <code>string</code>s</td>
+          <td>dois valores do mesmo tipo escalar (<code>int</code>/<code>bool</code>/<code>float</code>) ou dois <code>string</code>s; uma struct só contra <code>null</code></td>
           <td><code>bool</code></td>
         </tr>
         <tr>
@@ -372,21 +409,29 @@ zero de interpretação — assembly GAS, <code>as</code> e
         </tr>
       </tbody>
     </table>`,
-    err_callout: `<strong>Exemplo de erro:</strong>
+    err_callout: `<strong>Exemplos de erro:</strong>
       <code>var x: int = true;</code> falha com
-      <code>cannot initialize 'int x' with value of type 'bool'</code>.`,
+      <code>cannot initialize 'int x' with value of type 'bool'</code>,
+      <code>var s: string = null;</code> com
+      <code>cannot initialize 'string s' with value of type 'null'</code> e
+      <code>new P { … }</code> sem todos os campos com
+      <code>missing field 'y' in the initializer of 'P'</code>.`,
     h2_decl: 'Declaração de variáveis',
     decl_p: `O tipo é <strong>opcional</strong>: com inicializador é inferido
       dele. Sem inicializador tens de escrever o tipo
       (<code>var x: int;</code>), e então todos os caminhos que leem
       <code>x</code> têm de o atribuir primeiro — <em>análise de definite
-      assignment</em>. Arrays exigem sempre inicializador.`,
+      assignment</em>. Arrays exigem sempre inicializador: um literal para
+      <code>T[N]</code>, ou <code>new</code> para <code>T[]</code>.`,
     decl_assign: `Atribuição posterior usa <code>=</code> e o tipo tem de coincidir com
       o da declaração. Atribuição composta — <code>+= -= *= /= %=</code> —
-      lê e escreve numa frase só (também em <code>a[i]</code>).`,
+      lê e escreve numa frase só. O alvo de uma atribuição é qualquer
+      <em>lvalue</em>: uma variável, um elemento <code>a[i]</code> ou um
+      campo <code>p.x</code>.`,
     infer_callout: `<strong>Não dá para inferir:</strong> <code>var x;</code> — há
       de haver inicializador quando o tipo é omitido, e
-      <code>var a: int[3];</code> precisa de um literal.`,
+      <code>var a: int[3];</code> precisa de um literal enquanto
+      <code>var a: int[];</code> precisa de <code>new</code>.`,
   },
 
   stmt: {
@@ -398,12 +443,12 @@ zero de interpretação — assembly GAS, <code>as</code> e
       <code>var nome = expr;</code> inferir o tipo. Omitir o inicializador
       deixa a variável por atribuir até ao primeiro <code>=</code>.`,
     h2_assign: 'Atribuição',
-    assign_p: `A variável tem de existir no escopo atual (ou num escopo exterior) e o
-      tipo do RHS tem de ser idêntico. A atribuição composta
+    assign_p: `O alvo tem de ser uma variável existente no escopo e o tipo do RHS
+      tem de ser idêntico. A atribuição composta
       (<code>+=</code> <code>-=</code> <code>*=</code> <code>/=</code>
       <code>%=</code>) é a forma curta de <code>x = x op expr;</code>.`,
-    assign_arr: `Elementos de array atribuem-se por índice (não se pode atribuir ao
-      array inteiro):`,
+    assign_arr: `Elementos de array atribuem-se por índice e campos de struct por
+      nome (não se pode atribuir ao array inteiro):`,
     h2_block: 'Bloco',
     block_p: `<code>{ … }</code> abre um escopo novo. Variáveis declaradas dentro
       não são visíveis fora.`,
@@ -438,6 +483,16 @@ zero de interpretação — assembly GAS, <code>as</code> e
       Inteiros/bools usam <code>printf("%ld\\\\n", …)</code>, floats
       <code>printf("%.15g\\\\n", …)</code> e strings <code>puts</code>.`,
     print_escapes: 'Escapes de string: <code>\\n</code>, <code>\\t</code>, <code>\\"</code>, <code>\\\\</code>.',
+    h2_free: 'free',
+    free_p: `<code>free(x);</code> liberta o que <code>new</code> alocou e deixa o
+      lvalue a <code>null</code>; um array tem também o comprimento reposto
+      a <code>0</code>, pelo que um segundo <code>free</code> não faz nada.
+      Aceita um lvalue — uma variável, um campo <code>p.next</code> ou um
+      elemento <code>pts[i]</code> — nunca um temporário.`,
+    free_list: `<li><code>free(p);</code> — uma referência de struct vinda de <code>new P { … }</code></li>
+      <li><code>free(a);</code> — um array local de <code>new T[n]</code>; o slot do comprimento é reposto a <code>0</code>, logo <code>len(a)</code> imprime <code>0</code> e qualquer leitura seguinte falha o bounds check</li>
+      <li>Um array de tamanho fixo e um <em>parâmetro</em> de array não podem ser libertados — o primeiro vive no frame, o segundo pode apontar para a stack do chamador</li>
+      <li>Só structs e arrays de <code>new</code>: <code>free(42);</code> é erro de compilação</li>`,
     h2_expr: 'Expressão como statement',
     expr_p: `Chamadas a funções podem ser usadas como statement (o valor de retorno
       é descartado):`,
@@ -464,8 +519,8 @@ zero de interpretação — assembly GAS, <code>as</code> e
         <tr><td>5</td><td><code>+ -</code></td><td><code>int</code> ou <code>float</code> (nunca misturados)</td></tr>
         <tr><td>6</td><td><code>* / %</code></td><td><code>* /</code> em <code>int</code> ou <code>float</code>; <code>%</code> é só <code>int</code></td></tr>
         <tr><td>7</td><td>unários <code>- !</code></td><td>direita-a-esquerda</td></tr>
-        <tr><td>8</td><td><code>a[i]</code> (index)</td><td>após o primário</td></tr>
-        <tr><td>9</td><td>literais, ident, chamada, <code>[…]</code>, <code>(…)</code></td><td>primários</td></tr>
+        <tr><td>8</td><td><code>a[i]</code> (index), <code>p.x</code> (campo)</td><td>após o primário</td></tr>
+        <tr><td>9</td><td>literais, ident, chamada, <code>[…]</code>, <code>new P { … }</code>, <code>new T[n]</code>, <code>(…)</code></td><td>primários</td></tr>
       </tbody>
     </table>`,
     h2_lit: 'Literais',
@@ -478,7 +533,9 @@ zero de interpretação — assembly GAS, <code>as</code> e
     h2_cmp: 'Comparações',
     cmp_p: `<code>==</code> / <code>!=</code> só entre tipos iguais (nunca
       <code>void</code>): dois <code>int</code>s, dois <code>bool</code>s, dois
-      <code>float</code>s ou dois <code>string</code>s (conteúdo, não ponteiros).`,
+      <code>float</code>s ou dois <code>string</code>s (conteúdo, não ponteiros).
+      Uma struct só é comparável contra <code>null</code> — dois objectos não
+      são comparáveis.`,
     h2_logic: 'Lógicos com curto-circuito',
     h2_unary: 'Unários',
     h2_calls: 'Chamadas',
@@ -488,9 +545,16 @@ zero de interpretação — assembly GAS, <code>as</code> e
     h2_index: 'Index de array',
     index_p: `O índice tem de ser <code>int</code>. <strong>Bounds check em
       runtime:</strong> fora de <code>[0, N)</code> → mensagem de erro e
-      exit code 1.`,
+      exit code 1. O limite vem da memória, logo um array dinâmico ou um
+      parâmetro slice é verificado com o comprimento em runtime.`,
     index_callout: `<strong>Nota:</strong> <code>nums[0] = 5;</code> é um <em>statement</em>
       de atribuição indexada, não uma expressão avaliada.`,
+    h2_field: 'Acesso a campo — p.x',
+    field_p: `Lê um campo nomeado de uma referência de struct. O resultado é um
+      valor normal do tipo do campo, portanto serve onde esse tipo serve;
+      escrever nele é um <em>statement</em> de atribuição (ver Statements).
+      Ambas as formas páram o programa com erro de runtime quando a
+      referência é <code>null</code>.`,
     h2_strings: 'Strings',
     strings_p: `Literais entre aspas duplas são valores <code>string</code>
       normais: guarda-os, compara-os, passa-os, tira-lhes
@@ -528,9 +592,11 @@ zero de interpretação — assembly GAS, <code>as</code> e
     conv_list: `<li>Argumentos inteiros: <code>rdi rsi rdx rcx r8 r9</code>, depois stack</li>
       <li>Argumentos float: <code>xmm0</code>–<code>xmm7</code>, depois stack; um float retorna em <code>xmm0</code></li>
       <li>Retorno em <code>rax</code> (<code>xmm0</code> para <code>float</code>)</li>
+      <li>Uma struct é uma única referência: um registo inteiro e um slot na stack, por isso adicionar structs não mudou a ABI</li>
       <li>Frame pointer <code>rbp</code>; locais em <code>-8(%rbp)</code>, <code>-16(%rbp)</code>, …</li>
       <li>Parâmetros são “spilled” no prólogo para endereçamento uniforme</li>
-      <li>Stack alinhada a 16 bytes antes de <code>call</code> (inclusive com aninhamento)</li>`,
+      <li>Stack alinhada a 16 bytes antes de <code>call</code> (inclusive com aninhamento)</li>
+      <li>Blocos no heap vêm de <code>malloc</code> (objectos) e <code>calloc(n, 8)</code> (arrays); <code>free</code> chama <code>free</code></li>`,
     h2_asm: 'Exemplo de assembly gerada',
     h2_sema: 'Análise semântica',
     sema_list: `<li>Recolhe assinaturas de todas as funções primeiro (permite recursão mútua)</li>
@@ -546,7 +612,10 @@ zero de interpretação — assembly GAS, <code>as</code> e
         tem de ser atribuída em todos os caminhos que a leem
       </li>
       <li>Avisos (não erros): <code>unused variable</code>, <code>unreachable code</code></li>
-      <li>Atribui <code>frame slot</code> a cada <code>var</code>/parâmetro — o codegen não refaz lookup</li>`,
+      <li>Atribui <code>frame slot</code> a cada <code>var</code>/parâmetro — o codegen não refaz lookup</li>
+      <li>Recolhe todas as structs primeiro (um tipo pode ser usado antes de ser declarado) e depois verifica as listas de campos: cada campo exactamente uma vez, nomes desconhecidos levam sugestão <em>did-you-mean</em></li>
+      <li><code>null</code> só serve em slots de struct; uma struct só se compara com <code>null</code> e não tem aritmética</li>
+      <li><code>free(x)</code> só numa referência de struct ou numa variável de array que este frame criou com <code>new</code></li>`,
     h2_errors: 'Erros',
     errors_p: 'Sempre no padrão de ferramentas Unix:',
     ext_callout: `<strong>Extensibilidade:</strong> adicionar um statement ou tipo
@@ -600,7 +669,7 @@ zero de interpretação — assembly GAS, <code>as</code> e
       {
         step: '5',
         title: 'Explora os exemplos',
-        text: 'examples/ tem fib, slices, strings, floats — lê, altera, recompila.',
+        text: 'examples/ tem fib, slices, strings, floats, structs e heap arrays — lê, altera, recompila.',
       },
       {
         step: '6',
@@ -790,6 +859,11 @@ fn main() -> int {
 }`,
 
     syntax_overview: `// Comentário de linha
+struct Contador {
+    hits: int,
+    tag: string
+}
+
 fn add(a: int, b: int) -> int {
     return a + b;
 }
@@ -797,11 +871,13 @@ fn add(a: int, b: int) -> int {
 fn main() -> int {
     var nums = [10, 20, 30];  // tipo inferido: int[3]
     var ok: bool = nums[0] > 5;
+    var c = new Contador { hits: 0, tag: "a" };  // objecto no heap
 
     for i in 0..3 {
         if nums[i] % 2 != 0 {
             continue;
         }
+        c.hits += nums[i];
         print(nums[i]);
     }
 
@@ -810,6 +886,10 @@ fn main() -> int {
     } else {
         print(0);
     }
+
+    print(c.hits);   // 60
+    print(c.tag);    // a
+    free(c);
 
     print("done");
     return 0;
@@ -832,9 +912,53 @@ make test     # exemplos + suíte`,
 
     types_arrays: `var nums: int[5] = [10, 20, 30, 40, 50];
 var flags: bool[3] = [true, false, true];
+var vals: float[2] = [1.5, 2.5];
 
 print(nums[0]);   // 10
 nums[2] = 99;     // escrita por índice`,
+
+    types_struct: `struct Ponto {
+    x: int,
+    y: float,
+    label: string
+}
+
+fn main() -> int {
+    var p = new Ponto { x: 10, y: 2.5, label: "origem" };
+    p.x += 5;
+    print(p.x);            // 15
+    print(p.label);        // origem
+
+    var q: Ponto = null;
+    print(q == null);      // 1
+
+    free(p);
+    free(q);
+    return 0;
+}`,
+
+    types_heap: `var n = 8;
+var a: int[] = new int[n];   // 8 elementos a zero
+print(len(a));               // 8
+print(a[7]);                 // 0
+
+a[0] = 42;
+a[7] = a[0] + 1;             // 43
+
+free(a);                     // comprimento volta a 0
+print(len(a));               // 0`,
+
+    stmt_free: `var p = new Ponto { x: 1, y: 2 };
+var buf: float[] = new float[4];
+
+p.x += 10;
+buf[0] = float(p.x);
+print(buf[0]);          // 11
+
+free(p);                // objecto libertado, p é null
+free(buf);              // bloco libertado, len(buf) == 0
+print(p == null);       // 1
+print(len(buf));        // 0`,
 
     types_decl: `var idade: int = 30;
 var ativo: bool = idade >= 18;
@@ -845,6 +969,10 @@ var nome: string = "ada";
 var n = 42;             // int
 var ok = n > 40;        // bool
 var arr = [1, 2, 3];    // int[3]
+
+// heap: o comprimento é uma expressão, lida uma vez
+var tamanho = 16;
+var buf: int[] = new int[tamanho];
 
 // sem inicializador: atribuir antes de ler
 var total: int;
@@ -916,6 +1044,18 @@ var b: bool = true || sideEffect();`,
     expr_index: `var nums = [10, 20, 30];
 var x: int = nums[1];  // 20
 nums[0] = 5;           // escrita como statement`,
+
+    expr_field: `struct Ponto { x: int, y: int }
+
+fn main() -> int {
+    var p = new Ponto { x: 1, y: 2 };
+    var d: int = p.x + p.y;   // uma expressão int normal
+    p.x = p.y * 10;           // escrita como statement
+    print(p.x);               // 20
+    print(d);                 // 3
+    free(p);
+    return 0;
+}`,
 
     expr_strings: `var saudacao: string = "olá";
 print(saudacao);             // olá
