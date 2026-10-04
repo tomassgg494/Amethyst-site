@@ -42,7 +42,7 @@ zero interpretation — GAS assembly, <code>as</code> and
       {
         icon: '⎇',
         title: 'Strict static types',
-        body: '<code>int</code>, <code>bool</code> and arrays never mix. Type, arity and <code>return</code> path errors fail at compile time — with optional inference on <code>var</code>.',
+        body: '<code>int</code>, <code>bool</code>, <code>float</code> and <code>string</code> never mix — there are no implicit conversions. Type, arity and <code>return</code> path errors fail at compile time — with optional inference on <code>var</code>.',
       },
       {
         icon: '⧉',
@@ -65,7 +65,7 @@ zero interpretation — GAS assembly, <code>as</code> and
     pipeline_list: `<li><span class="step">1</span><strong>.amt</strong><span>Amethyst source</span></li>
 <li><span class="step">2</span><strong>Lexer</strong><span>tokens</span></li>
 <li><span class="step">3</span><strong>Parser</strong><span>AST</span></li>
-<li><span class="step">4</span><strong>Sema</strong><span>types &amp; slots</span></li>
+<li><span class="step">4</span><strong>Sema</strong><span>types, DA, slots</span></li>
 <li><span class="step">5</span><strong>Codegen</strong><span>GAS x86-64</span></li>
 <li><span class="step">6</span><strong>as · ld</strong><span>native binary</span></li>`,
     cta_title: 'Get started',
@@ -119,15 +119,17 @@ zero interpretation — GAS assembly, <code>as</code> and
       high-level languages (Python, JavaScript) and low-level ones (C, C++):
       braces, semicolons, explicit types, no magic.`,
     callout: `<strong>Current v1.1:</strong> <code>int</code>, <code>bool</code>,
-      arrays <code>int[N]</code>/<code>bool[N]</code> (with bounds checks),
-      strings in <code>print</code>, functions, <code>if</code>,
+      <code>float</code> and <code>string</code>, fixed arrays
+      <code>int[N]</code>/<code>bool[N]</code> and array parameters
+      <code>int[]</code>/<code>bool[]</code> (both bounds-checked), compound
+      assignment, <code>len()</code>, functions, <code>if</code>,
       <code>while</code>, <code>for</code> ranges, <code>break</code>/<code>continue</code>,
-      variables with inference and <code>print</code>. Compiler in C++17,
-      GAS x86-64 backend.`,
+      variables with inference and definite-assignment analysis, and
+      <code>print</code>. Compiler in C++17, GAS x86-64 backend.`,
     hello: 'Hello, Amethyst',
     features: 'Features',
     features_list: `<li><strong>Compiled</strong> — pipeline <code>.amt → .s → .o → binary</code></li>
-      <li><strong>Static</strong> — type and return-path errors at compile time</li>
+      <li><strong>Static</strong> — type, return-path and definite-assignment errors at compile time</li>
       <li><strong>Fast</strong> — native code, no interpretation layer</li>
       <li><strong>Readable</strong> — minimalist but familiar syntax</li>
       <li><strong>No heavy dependencies</strong> — just <code>g++</code>, <code>as</code> and <code>ld</code></li>`,
@@ -135,7 +137,7 @@ zero interpretation — GAS assembly, <code>as</code> and
     next_beginners: 'if you are just starting out, go straight here',
     next_install: 'build in seconds',
     next_syntax: 'overview of the language',
-    next_types: 'arrays, strings',
+    next_types: 'int, float, bool, strings, arrays and slices',
     next_statements: 'statements',
     next_compiler: 'how it works under the hood',
   },
@@ -231,8 +233,9 @@ zero interpretation — GAS assembly, <code>as</code> and
       <li>returns <code>int</code> (the process exit code)</li>`,
     h2_fn: 'Functions',
     fn_p: `Parameters use <code>name: type</code>. The <code>-&gt;</code> operator
-      links the signature to the body. Up to 6 parameters go in registers (SysV);
-      beyond that, on the stack.`,
+      links the signature to the body. Up to 6 integer (or 8 <code>float</code>)
+      parameters go in registers (SysV); an array parameter takes two integer
+      registers, and whatever does not fit is passed on the stack.`,
     h2_ident: 'Identifiers',
     ident_list: `<li>Start with a letter or <code>_</code></li>
       <li>Followed by letters, digits or <code>_</code></li>
@@ -244,15 +247,15 @@ zero interpretation — GAS assembly, <code>as</code> and
       </thead>
       <tbody>
         <tr><td><code>fn</code></td><td>function declaration</td></tr>
-        <tr><td><code>var</code></td><td>local variable with an initialiser (type optional)</td></tr>
+        <tr><td><code>var</code></td><td>local variable; the type is optional when there is an initialiser</td></tr>
         <tr><td><code>return</code></td><td>return a value (or exit)</td></tr>
         <tr><td><code>if</code> / <code>else</code></td><td>condition (<code>bool</code>)</td></tr>
         <tr><td><code>while</code></td><td>loop (<code>bool</code>)</td></tr>
         <tr><td><code>for</code> … <code>in</code></td><td>range loop: <code>for i in 0..10</code></td></tr>
         <tr><td><code>break</code></td><td>exit the current loop</td></tr>
         <tr><td><code>continue</code></td><td>next iteration of the current loop</td></tr>
-        <tr><td><code>print</code></td><td>print an <code>int</code>, <code>bool</code> or string</td></tr>
-        <tr><td><code>int</code> / <code>bool</code> / <code>void</code></td><td>types</td></tr>
+        <tr><td><code>print</code></td><td>print an <code>int</code>, <code>bool</code>, <code>float</code> or <code>string</code></td></tr>
+        <tr><td><code>int</code> / <code>bool</code> / <code>float</code> / <code>string</code> / <code>void</code></td><td>types</td></tr>
         <tr><td><code>true</code> / <code>false</code></td><td>bool literals</td></tr>
       </tbody>
     </table>`,
@@ -263,13 +266,28 @@ zero interpretation — GAS assembly, <code>as</code> and
 
   types: {
     title: 'Types',
-    intro: `v1.1 is small on purpose: two scalar types, fixed-size arrays and
-      string literals. <strong>There are no implicit conversions</strong>
-      between <code>int</code> and <code>bool</code>.`,
+    intro: `v1.1 is small on purpose: four scalar types, fixed-size arrays and
+      array slices. <strong>There are no implicit conversions</strong> between
+      <code>int</code>, <code>bool</code>, <code>float</code> and
+      <code>string</code> — write <code>float(n)</code> or <code>int(x)</code>
+      to move between the two numeric types.`,
     h2_int: 'int',
     int_p: `64-bit signed integer (<code>i64</code>), held in the
       <code>rax</code> register and 8 bytes on the stack.`,
     int_arith: 'Supports signed <code>+ - * / %</code> arithmetic (truncating division).',
+    h2_float: 'float',
+    float_p: `64-bit IEEE 754 <code>binary64</code>, computed in the
+      <code>xmm</code> registers and 8 bytes on the stack. Literals are
+      <code>1.5</code>, <code>0.0</code> and <code>2e-3</code> —
+      <code>0..10</code> is still a range, not a float.`,
+    float_arith: `Supports <code>+ - * /</code> on two <code>float</code>s. There is
+      no <code>%</code> for floats. Division by zero follows IEEE-754 and yields
+      <code>inf</code> / <code>NaN</code> instead of trapping, and every
+      comparison with <code>NaN</code> is false except <code>!=</code>.`,
+    float_conv: `Converts explicitly with <code>float(n)</code> (<code>int</code> →
+      <code>float</code>) and <code>int(x)</code> (<code>float</code> →
+      <code>int</code>, truncating toward zero). <code>print</code> shows the
+      shortest round-tripping form (<code>%.15g</code>).`,
     h2_bool: 'bool',
     bool_p: `<code>true</code> or <code>false</code>. On the stack it is stored as 8 bytes
       (<code>0</code>/<code>1</code>); <code>print</code> shows <code>1</code>
@@ -287,12 +305,25 @@ zero interpretation — GAS assembly, <code>as</code> and
         <strong>Runtime bounds check:</strong> an index outside
         <code>[0, N)</code> prints an error message and exits with code 1
       </li>
-      <li>You cannot assign to the whole array, compare arrays or pass them to functions (yet)</li>`,
-    h2_strings: 'Strings (literals)',
+      <li>You cannot assign to the whole array or compare arrays — but you can pass them to a function as a slice</li>`,
+    h2_slices: 'Array parameters — int[] / bool[]',
+    slices_p: `A parameter declared <code>int[]</code> or <code>bool[]</code>
+      receives the caller's array as <strong>pointer + length</strong>: it
+      aliases the same storage, so the callee can write through it, and
+      <code>len()</code> works on it at runtime.`,
+    slices_list: `<li><code>fn total(a: int[]) -&gt; int</code> — no size in the signature</li>
+      <li><code>for i in 0..len(a)</code> — the length is known at run time</li>
+      <li>The bounds check uses that runtime length, not a compile-time one</li>
+      <li>Only <code>int[]</code> / <code>bool[]</code>: a local array still needs a fixed size</li>`,
+    h2_strings: 'Strings',
     strings_p: `Literals in double quotes with escapes <code>\\n</code>,
-      <code>\\t</code>, <code>&quot;</code> and <code>\\\\</code>. In v1.1 they can only
-      be used directly with <code>print</code> — there are no string
-      variables and no string comparisons.`,
+      <code>\\t</code>, <code>&quot;</code> and <code>\\\\</code>. A
+      <code>string</code> is a pointer to NUL-terminated text in
+      <code>.rodata</code>: store it in variables, assign it, pass it to and
+      return it from functions, and compare with <code>==</code> /
+      <code>!=</code> — which compares <em>contents</em>, not pointers.
+      <code>len(s)</code> is the byte length. There is still no concatenation,
+      indexing or ordering.`,
     h2_rules: 'Typing rules',
     table_rules: `<table>
       <thead>
@@ -305,13 +336,18 @@ zero interpretation — GAS assembly, <code>as</code> and
           <td><code>int</code></td>
         </tr>
         <tr>
+          <td><code>+ - * /</code></td>
+          <td><code>float</code>, <code>float</code></td>
+          <td><code>float</code></td>
+        </tr>
+        <tr>
           <td><code>&lt; &lt;= &gt; &gt;=</code></td>
-          <td><code>int</code>, <code>int</code></td>
+          <td>two <code>int</code>s or two <code>float</code>s</td>
           <td><code>bool</code></td>
         </tr>
         <tr>
           <td><code>== !=</code></td>
-          <td>same scalar type (<code>int</code>/<code>bool</code>)</td>
+          <td>two values of the same scalar type (<code>int</code>/<code>bool</code>/<code>float</code>) or two <code>string</code>s</td>
           <td><code>bool</code></td>
         </tr>
         <tr>
@@ -326,8 +362,13 @@ zero interpretation — GAS assembly, <code>as</code> and
         </tr>
         <tr>
           <td>unary <code>-</code></td>
-          <td><code>int</code></td>
-          <td><code>int</code></td>
+          <td><code>int</code> or <code>float</code></td>
+          <td>same type</td>
+        </tr>
+        <tr>
+          <td><code>float(n)</code> / <code>int(x)</code></td>
+          <td><code>int</code> / <code>float</code></td>
+          <td><code>float</code> / <code>int</code></td>
         </tr>
       </tbody>
     </table>`,
@@ -335,13 +376,17 @@ zero interpretation — GAS assembly, <code>as</code> and
       <code>var x: int = true;</code> fails with
       <code>cannot initialize 'int x' with value of type 'bool'</code>.`,
     h2_decl: 'Variable declaration',
-    decl_p: `<code>var</code> requires an initialiser — there are no default values and no
-      <em>definite assignment</em>. The type is <strong>optional</strong>:
-      when omitted it is inferred from the initialiser.`,
+    decl_p: `The type is <strong>optional</strong>: with an initialiser it is
+      inferred from it. Without an initialiser you must write the type
+      (<code>var x: int;</code>), and then every path that reads
+      <code>x</code> must assign it first — <em>definite-assignment analysis</em>.
+      Arrays always need an initialiser.`,
     decl_assign: `Later assignment uses <code>=</code> and the type must match
-      the declaration.`,
-    infer_callout: `<strong>Cannot be inferred:</strong> <code>var x = "hi";</code> —
-      strings cannot be stored in variables (v1.1).`,
+      the declaration. Compound assignment — <code>+= -= *= /= %=</code> —
+      reads and writes in one statement (also on <code>a[i]</code>).`,
+    infer_callout: `<strong>Cannot be inferred:</strong> <code>var x;</code> — an
+      initialiser is required when the type is omitted, and
+      <code>var a: int[3];</code> needs a literal.`,
   },
 
   stmt: {
@@ -349,9 +394,14 @@ zero interpretation — GAS assembly, <code>as</code> and
     intro: `Statements end with <code>;</code> (blocks and control statements
       wrapped in <code>{ }</code> get no extra <code>;</code> at the end).`,
     h2_var: 'Variable declaration',
+    var_p: `Declare with <code>var name: type = expr;</code>, or let
+      <code>var name = expr;</code> infer the type. Omitting the initialiser
+      leaves the variable unassigned until the first <code>=</code>.`,
     h2_assign: 'Assignment',
     assign_p: `The variable must exist in the current scope (or an enclosing one) and the
-      type of the RHS must be identical.`,
+      type of the RHS must be identical. Compound assignment
+      (<code>+=</code> <code>-=</code> <code>*=</code> <code>/=</code>
+      <code>%=</code>) is the short form of <code>x = x op expr;</code>.`,
     assign_arr: `Array elements are assigned by index (you cannot assign to the
       whole array):`,
     h2_block: 'Block',
@@ -384,16 +434,19 @@ zero interpretation — GAS assembly, <code>as</code> and
       </li>`,
     h2_print: 'print',
     print_p: `Built-in statement (not a function): prints an <code>int</code>,
-      <code>bool</code> or <strong>string literal</code> followed by a newline.
-      Integers/bools use <code>printf("%ld\\\\n", …)</code>; strings use
+      <code>bool</code>, <code>float</code> or <code>string</code> followed by
+      a newline. Integers/bools use <code>printf("%ld\\\\n", …)</code>,
+      floats <code>printf("%.15g\\\\n", …)</code> and strings
       <code>puts</code>.`,
     print_escapes: 'String escapes: <code>\\n</code>, <code>\\t</code>, <code>\\"</code>, <code>\\\\</code>.',
     h2_expr: 'Expression as a statement',
     expr_p: `Function calls can be used as a statement (the return value
       is discarded):`,
     scope_callout: `<strong>Scope:</strong> redeclaring the same name in the same scope is
-      an error; shadowing across different scopes is not explicitly
-      forbidden in v1.1 beyond scope checking.`,
+      an error; shadowing across different scopes is allowed.
+      <strong>Warnings</strong> (not errors): <code>unused variable</code> and
+      <code>unreachable code</code>, printed on stderr without stopping the
+      build.`,
   },
 
   expr: {
@@ -410,19 +463,24 @@ zero interpretation — GAS assembly, <code>as</code> and
         <tr><td>2</td><td><code>&&</code></td><td>short-circuit</td></tr>
         <tr><td>3</td><td><code>== !=</code></td><td>left-associative</td></tr>
         <tr><td>4</td><td><code>&lt; &lt;= &gt; &gt;=</code></td><td>→ <code>bool</code></td></tr>
-        <tr><td>5</td><td><code>+ -</code></td><td><code>int</code></td></tr>
-        <tr><td>6</td><td><code>* / %</code></td><td><code>int</code></td></tr>
+        <tr><td>5</td><td><code>+ -</code></td><td><code>int</code> or <code>float</code> (never mixed)</td></tr>
+        <tr><td>6</td><td><code>* / %</code></td><td><code>* /</code> on <code>int</code> or <code>float</code>; <code>%</code> is <code>int</code>-only</td></tr>
         <tr><td>7</td><td>unary <code>- !</code></td><td>right-to-left</td></tr>
         <tr><td>8</td><td><code>a[i]</code> (index)</td><td>after the primary</td></tr>
         <tr><td>9</td><td>literals, ident, call, <code>[…]</code>, <code>(…)</code></td><td>primaries</td></tr>
       </tbody>
     </table>`,
     h2_lit: 'Literals',
-    lit_p: 'Non-negative decimal integers; the minus sign is a unary operator.',
+    lit_p: `Non-negative decimal integers (<code>42</code>) — the minus sign is
+      a unary operator. Floats are <code>1.5</code>, <code>0.0</code>,
+      <code>2e-3</code> (a <code>.</code> followed by a digit makes a float;
+      <code>0..10</code> stays a range). Also <code>true</code>/<code>false</code>
+      and <code>"strings"</code>.`,
     h2_arith: 'Arithmetic operators',
     h2_cmp: 'Comparisons',
     cmp_p: `<code>==</code> / <code>!=</code> only between identical types (never
-      <code>void</code>).`,
+      <code>void</code>): two <code>int</code>s, two <code>bool</code>s, two
+      <code>float</code>s or two <code>string</code>s (contents, not pointers).`,
     h2_logic: 'Short-circuit logic',
     h2_unary: 'Unary operators',
     h2_calls: 'Calls',
@@ -436,11 +494,12 @@ zero interpretation — GAS assembly, <code>as</code> and
     index_callout: `<strong>Note:</strong> <code>nums[0] = 5;</code> is an indexed assignment
       <em>statement</em>, not an evaluated expression.`,
     h2_strings: 'Strings',
-    strings_p: `Literals in double quotes, valid <strong>only</strong> as a
-      <code>print</code> argument in v1.1:`,
+    strings_p: `Literals in double quotes are ordinary <code>string</code>
+      values: store them, compare them, pass them around, take
+      <code>len()</code>.`,
     strings_esc: `Escapes: <code>\\n</code> (newline), <code>\\t</code> (tab),
-      <code>\\"</code> (quote), <code>\\\\</code> (backslash). They cannot be
-      stored in a variable or compared.`,
+      <code>\\"</code> (quote), <code>\\\\</code> (backslash). There is no
+      concatenation, indexing or ordering yet.`,
     h2_paren: 'Parentheses',
     paren_p: `Use <code>(…)</code> freely to group; precedence alone already
       resolves the common cases.`,
@@ -462,14 +521,15 @@ zero interpretation — GAS assembly, <code>as</code> and
         <tr><td><code>src/lexer.*</code></td><td>source → tokens, line:column errors</td></tr>
         <tr><td><code>src/ast.hpp</code></td><td>expression / statement / function nodes</td></tr>
         <tr><td><code>src/parser.*</code></td><td>recursive descent + precedence</td></tr>
-        <tr><td><code>src/sema.*</code></td><td>symbol table, types, frame slots</td></tr>
+        <tr><td><code>src/sema.*</code></td><td>symbol table, types, definite assignment, frame slots</td></tr>
         <tr><td><code>src/codegen.*</code></td><td>AST → assembly</td></tr>
         <tr><td><code>src/main.cpp</code></td><td>driver + <code>as</code>/<code>gcc</code> invocation</td></tr>
       </tbody>
     </table>`,
     h2_conv: 'Calling convention (System V AMD64)',
     conv_list: `<li>Integer arguments: <code>rdi rsi rdx rcx r8 r9</code>, then the stack</li>
-      <li>Return value in <code>rax</code></li>
+      <li>Float arguments: <code>xmm0</code>–<code>xmm7</code>, then the stack; a float returns in <code>xmm0</code></li>
+      <li>Return value in <code>rax</code> (<code>xmm0</code> for <code>float</code>)</li>
       <li>Frame pointer <code>rbp</code>; locals at <code>-8(%rbp)</code>, <code>-16(%rbp)</code>, …</li>
       <li>Parameters are “spilled” in the prologue for uniform addressing</li>
       <li>Stack 16-byte aligned before <code>call</code> (including with nesting)</li>`,
@@ -483,6 +543,11 @@ zero interpretation — GAS assembly, <code>as</code> and
         Non-<code>void</code> functions must return on every path
         (<code>return</code>, blocks, <code>if</code>/<code>else</code>)
       </li>
+      <li>
+        Definite-assignment analysis: a variable declared without an
+        initialiser must be assigned on every path that reads it
+      </li>
+      <li>Warnings (not errors): <code>unused variable</code>, <code>unreachable code</code></li>
       <li>Assigns a <code>frame slot</code> to each <code>var</code>/parameter — codegen never re-looks-up</li>`,
     h2_errors: 'Errors',
     errors_p: 'Always in the standard Unix tool pattern:',
@@ -504,7 +569,7 @@ zero interpretation — GAS assembly, <code>as</code> and
     h2_before: 'Before you start',
     h3_what: 'What Amethyst is (and is not)',
     what_list: `<li><strong>It is</strong> compiled — your .amt becomes a native binary, no interpreter.</li>
-      <li><strong>It is</strong> typed — <code>int</code> and <code>bool</code> never mix.</li>
+      <li><strong>It is</strong> typed — <code>int</code>, <code>bool</code>, <code>float</code> and <code>string</code> never mix.</li>
       <li><strong>It is</strong> small on purpose — the base stays solid before it grows.</li>
       <li><strong>It is not</strong> for shipping a production app tomorrow.</li>
       <li><strong>It is not</strong> a reason to fear mistakes — mistakes are how you learn.</li>`,
@@ -537,7 +602,7 @@ zero interpretation — GAS assembly, <code>as</code> and
       {
         step: '5',
         title: 'Explore the examples',
-        text: 'examples/ has fib, control, params — read, change, recompile.',
+        text: 'examples/ has fib, slices, strings, floats — read, change, recompile.',
       },
       {
         step: '6',
@@ -668,13 +733,13 @@ zero interpretation — GAS assembly, <code>as</code> and
         to: '/docs/types',
         label: 'Basics',
         title: 'Types',
-        text: 'int, bool, arrays and the strict rules.',
+        text: 'int, float, bool, strings, arrays and the strict rules.',
       },
       {
         to: '/docs/statements',
         label: 'Practice',
         title: 'Statements',
-        text: 'if, while, for, arrays in everyday use.',
+        text: 'if, while, for, assignment and print in everyday use.',
       },
     ],
     checklist: `<strong>Checklist “am I improving?”</strong>
@@ -701,7 +766,7 @@ zero interpretation — GAS assembly, <code>as</code> and
     error: 'Oops, something went wrong contacting Gemini. Try again in a moment.',
     no_response: '(no response)',
     system:
-      'You are the official AI assistant of the Amethyst website, a compiled programming language (C++17, x86-64 GAS, no LLVM) with static types (int=64-bit, bool, void), C/JS/Python-style syntax (fn, var, braces, semicolons) and a .amt → Lexer → Parser → Sema → Codegen → as/ld pipeline. Answer shortly, in a friendly way, in English. Help with questions about the language, installation, syntax and Amethyst code examples.',
+      'You are the official AI assistant of the Amethyst website, a compiled programming language (C++17, x86-64 GAS, no LLVM) with static types (int=64-bit, bool, float=64-bit IEEE-754, string, void), C/JS/Python-style syntax (fn, var, braces, semicolons) and a .amt → Lexer → Parser → Sema → Codegen → as/ld pipeline. Answer shortly, in a friendly way, in English. Help with questions about the language, installation, syntax and Amethyst code examples.',
   },
 
   code: {
@@ -760,9 +825,9 @@ fn main() -> int {
     syntax_comment: '// to the end of the line',
 
     install_deb: `make deb
-# creates dist/amethyst-devkit_1.0.0_amd64.deb (~60 KB)
+# creates dist/amethyst-devkit_1.1.0_amd64.deb (~100 KB)
 
-sudo apt install ./dist/amethyst-devkit_1.0.0_amd64.deb`,
+sudo apt install ./dist/amethyst-devkit_1.1.0_amd64.deb`,
 
     install_build: `make          # creates ./amethystc
 make test     # examples + test suite`,
@@ -775,17 +840,32 @@ nums[2] = 99;     // write by index`,
 
     types_decl: `var age: int = 30;
 var active: bool = age >= 18;
+var ratio: float = 1.5;
+var name: string = "ada";
 
 // type inference
 var n = 42;             // int
 var ok = n > 40;        // bool
-var arr = [1, 2, 3];    // int[3]`,
+var arr = [1, 2, 3];    // int[3]
+
+// no initialiser: assign before reading
+var total: int;
+total = age;
+total += 1;`,
 
     stmt_var: `var x: int = 1;
 var flag: bool = false;
 var n = 42;          // inferred type
 var a: int[3] = [1, 2, 3];
-var b = [true, false]; // bool[2] inferred`,
+var b = [true, false]; // bool[2] inferred
+
+// declared without a value: every path that reads it assigns it first
+var out: string;
+if n > 0 {
+    out = "positive";
+} else {
+    out = "non-positive";
+}`,
 
     stmt_for_dynamic: `// dynamic ranges
 for i in 0..n {
@@ -806,7 +886,7 @@ for i in 0..n {
 
     beg_terminal: `# from the repo root
 make deb
-sudo apt install ./dist/amethyst-devkit_1.0.0_amd64.deb
+sudo apt install ./dist/amethyst-devkit_1.1.0_amd64.deb
 
 # first program
 amethyst-new hello
@@ -814,16 +894,20 @@ amethystc hello.amt -o hello
 ./hello   # 42`,
 
     expr_literals: `42          // int
+1.5         // float
+2e-3        // float (0.002)
 true        // bool
 false       // bool
-"hello"     // string (print only)
+"hello"     // string
 [1, 2, 3]   // int[3]
 [true, !false] // bool[2]`,
 
     expr_arith: `var a: int = 7 + 3 * 2;   // 13
 var b: int = (7 + 3) * 2; // 20
 var c: int = 7 % 3;       // 1
-var d: int = -7 / 2;      // -3 (truncates toward zero)`,
+var d: int = -7 / 2;      // -3 (truncates toward zero)
+var e: float = 1.5 * 4.0;  // 6
+var f: int = int(2.7);    // 2 (truncates toward zero)`,
 
     expr_logic: `// if lhs is false, rhs is NOT evaluated
 var a: bool = false && sideEffect();
@@ -835,8 +919,15 @@ var b: bool = true || sideEffect();`,
 var x: int = nums[1];  // 20
 nums[0] = 5;           // write as a statement`,
 
-    expr_strings: `print("hello");
-print("a\\tb\\n");`,
+    expr_strings: `var greeting: string = "hello";
+print(greeting);              // hello
+
+fn same(a: string, b: string) -> bool {
+    return a == b;            // compares contents
+}
+
+print(same("hi", "hi"));      // 1
+print(len(greeting));         // 5`,
 
     comp_pipeline: `file.amt
   │  Lexer      → tokens

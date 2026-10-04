@@ -26,7 +26,7 @@ import { t } from '../../i18n'
 
     <h2>{{ t('expr.h2_cmp') }}</h2>
     <CodeBlock
-      :code="`var t: bool = 3 < 4;     // true\nvar f: bool = 3 != 4;    // true\nvar e: bool = (1 == 1);  // true`"
+      :code='`var t: bool = 3 < 4;          // true\nvar f: bool = 3 != 4;         // true\nvar e: bool = (1 == 1);       // true\nvar g: bool = 1.5 < 2.0;      // true\nvar h: bool = "ab" == "ab";  // true`'
       filename="cmp.amt"
     />
     <p v-html="t('expr.cmp_p')"></p>

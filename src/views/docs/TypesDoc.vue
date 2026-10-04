@@ -23,6 +23,15 @@ import { t } from '../../i18n'
       filename="bools.amt"
     />
 
+    <h2>{{ t('types.h2_float') }}</h2>
+    <p v-html="t('types.float_p')"></p>
+    <CodeBlock
+      :code="`var pi: float = 3.5;\nvar q = 2.5;          // inferred\n\nprint(pi * q);        // 8.75\nprint(int(2.7));      // 2\nprint(float(7) / 2.0); // 3.5`"
+      filename="floats.amt"
+    />
+    <p v-html="t('types.float_arith')"></p>
+    <p v-html="t('types.float_conv')"></p>
+
     <h2>void</h2>
     <p v-html="t('types.void_p')"></p>
     <CodeBlock
@@ -38,10 +47,18 @@ import { t } from '../../i18n'
     />
     <ul v-html="t('types.arrays_list')"></ul>
 
+    <h2>{{ t('types.h2_slices') }}</h2>
+    <p v-html="t('types.slices_p')"></p>
+    <CodeBlock
+      :code="`fn total(a: int[]) -> int {\n    var t = 0;\n    for i in 0..len(a) {\n        t += a[i];\n    }\n    return t;\n}`"
+      filename="slices.amt"
+    />
+    <ul v-html="t('types.slices_list')"></ul>
+
     <h2>{{ t('types.h2_strings') }}</h2>
     <p v-html="t('types.strings_p')"></p>
     <CodeBlock
-      :code='`print("Hello!");\nprint("line1\\nline2");`'
+      :code='`var s: string = "hello";\nprint(s);              // hello\nprint(s == "hello");   // 1\nprint(len(s));         // 5`'
       filename="strings.amt"
     />
 

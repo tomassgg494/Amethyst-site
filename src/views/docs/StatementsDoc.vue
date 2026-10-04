@@ -9,16 +9,17 @@ import { t } from '../../i18n'
     <p v-html="t('stmt.intro')"></p>
 
     <h2>{{ t('stmt.h2_var') }}</h2>
+    <p v-html="t('stmt.var_p')"></p>
     <CodeBlock
       :code="t('code.stmt_var')"
       filename="var.amt"
     />
 
     <h2>{{ t('stmt.h2_assign') }}</h2>
-    <CodeBlock :code="`x = x + 1;`" filename="assign.amt" />
+    <CodeBlock :code="`x = x + 1;\nx += 5;     // compound: x = x + 5`" filename="assign.amt" />
     <p v-html="t('stmt.assign_p')"></p>
     <p v-html="t('stmt.assign_arr')"></p>
-    <CodeBlock :code="`nums[2] = 99;`" filename="assign-index.amt" />
+    <CodeBlock :code="`nums[2] = 99;\nnums[2] += 1;`" filename="assign-index.amt" />
 
     <h2>{{ t('stmt.h2_block') }}</h2>
     <p v-html="t('stmt.block_p')"></p>
@@ -70,7 +71,7 @@ import { t } from '../../i18n'
     <h2>print</h2>
     <p v-html="t('stmt.print_p')"></p>
     <CodeBlock
-      :code='`print(42);\nprint(true);\nprint("Hello, Amethyst!");\nprint("tab:\\t quote:\\"");`'
+      :code='`print(42);\nprint(true);\nprint(3.5);\nprint("Hello, Amethyst!");\nprint("tab:\\t quote:\\"");`'
       filename="print.amt"
     />
     <p v-html="t('stmt.print_escapes')"></p>

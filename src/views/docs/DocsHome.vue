@@ -38,7 +38,7 @@ const sample = `fn main() -> int {
       </li>
       <li>
         <router-link to="/docs/types">{{ t('docs.nav.types') }}</router-link> —
-        <code>int</code>, <code>bool</code>, {{ t('docsHome.next_types') }}
+        {{ t('docsHome.next_types') }}
       </li>
       <li>
         <router-link to="/docs/statements">{{ t('docs.nav.statements') }}</router-link>
