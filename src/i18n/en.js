@@ -903,9 +903,9 @@ fn main() -> int {
     syntax_comment: '// to the end of the line',
 
     install_deb: `make deb
-# creates dist/amethyst-devkit_1.1.0_amd64.deb (~100 KB)
+# creates dist/amethyst-devkit_1.2.0_amd64.deb (~100 KB)
 
-sudo apt install ./dist/amethyst-devkit_1.1.0_amd64.deb`,
+sudo apt install ./dist/amethyst-devkit_1.2.0_amd64.deb`,
 
     install_build: `make          # creates ./amethystc
 make test     # examples + test suite`,
@@ -1012,7 +1012,7 @@ for i in 0..n {
 
     beg_terminal: `# from the repo root
 make deb
-sudo apt install ./dist/amethyst-devkit_1.1.0_amd64.deb
+sudo apt install ./dist/amethyst-devkit_1.2.0_amd64.deb
 
 # first program
 amethyst-new hello
