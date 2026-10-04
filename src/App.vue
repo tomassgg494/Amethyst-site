@@ -30,7 +30,7 @@ import { LOCALES, locale, setLocale, t } from './i18n'
         </router-link>
         <a
           class="nav__link nav__link--ext"
-          href="https://github.com"
+          href="https://github.com/tomassgg494/Amethyst"
           target="_blank"
           rel="noreferrer"
         >
