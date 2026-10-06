@@ -165,6 +165,7 @@ zero de interpretação — assembly GAS, <code>as</code> e
         <tr><td>Helper de projecto</td><td><code>/usr/bin/amethyst-new</code></td></tr>
         <tr><td>Exemplos</td><td><code>/usr/share/amethyst/examples/</code></td></tr>
         <tr><td>Templates</td><td><code>/usr/share/amethyst/templates/</code></td></tr>
+        <tr><td>Extensão VS Code</td><td><code>/usr/share/amethyst/vscode/</code></td></tr>
         <tr><td>Docs</td><td><code>/usr/share/doc/amethyst/README.md</code></td></tr>
         <tr><td>Man pages</td><td><code>man amethystc</code></td></tr>
       </tbody>
@@ -231,7 +232,10 @@ zero de interpretação — assembly GAS, <code>as</code> e
       <code>.amt</code>, regras de comentário e indentação, snippets para
       as declarações habituais, e comandos <em>Compile</em> /
       <em>Compile and Run</em> que chamam <code>amethystc</code> num
-      terminal integrado. Precisa de <code>amethystc</code> no teu
+      terminal integrado. O Dev Kit instala as fontes em
+      <code>/usr/share/amethyst/vscode/</code> e cada release no GitHub
+      junta um <code>amethyst-1.3.0.vsix</code> pronto a instalar como
+      asset separado. Precisa de <code>amethystc</code> no teu
       <code>PATH</code>:`,
   },
 
@@ -991,16 +995,16 @@ fn main() -> int {
     syntax_comment: '// até o fim da linha',
 
     install_deb: `make deb
-# gera dist/amethyst-devkit_1.2.0_amd64.deb (~100 KB)
+# gera dist/amethyst-devkit_1.3.0_amd64.deb (~100 KB)
 
-sudo apt install ./dist/amethyst-devkit_1.2.0_amd64.deb`,
+sudo apt install ./dist/amethyst-devkit_1.3.0_amd64.deb`,
 
     install_build: `make          # gera ./amethystc
 make test     # exemplos + suíte`,
 
     install_editor: `cd vscode-amethyst
 npm run package
-code --install-extension amethyst-0.1.0.vsix`,
+code --install-extension amethyst-1.3.0.vsix`,
 
     types_arrays: `var nums: int[5] = [10, 20, 30, 40, 50];
 var flags: bool[3] = [true, false, true];
@@ -1158,7 +1162,7 @@ c.bump();                   // e uma chamada a método`,
 
     beg_terminal: `# na raiz do repo
 make deb
-sudo apt install ./dist/amethyst-devkit_1.2.0_amd64.deb
+sudo apt install ./dist/amethyst-devkit_1.3.0_amd64.deb
 
 # primeiro programa
 amethyst-new hello
