@@ -48,6 +48,14 @@ import { t } from '../../i18n'
     <ul v-html="t('types.struct_list')"></ul>
     <div class="callout" v-html="t('types.null_callout')"></div>
 
+    <h2>{{ t('types.h2_methods') }}</h2>
+    <p v-html="t('types.methods_p')"></p>
+    <CodeBlock
+      :code="t('code.types_methods')"
+      filename="methods.amt"
+    />
+    <ul v-html="t('types.methods_list')"></ul>
+
     <h2>{{ t('types.h2_arrays') }}</h2>
     <p v-html="t('types.arrays_p')"></p>
     <CodeBlock
@@ -67,11 +75,16 @@ import { t } from '../../i18n'
       :code="t('code.types_heap')"
       filename="heap.amt"
     />
+    <CodeBlock
+      :code="t('code.types_dynarray')"
+      filename="grow.amt"
+    />
+    <ul v-html="t('types.dynarray_list')"></ul>
 
     <h2>{{ t('types.h2_strings') }}</h2>
     <p v-html="t('types.strings_p')"></p>
     <CodeBlock
-      :code='`var s: string = "hello";\nprint(s);              // hello\nprint(s == "hello");   // 1\nprint(len(s));         // 5`'
+      :code="t('code.types_strings')"
       filename="strings.amt"
     />
 

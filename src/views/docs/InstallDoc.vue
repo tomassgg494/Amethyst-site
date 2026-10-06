@@ -50,5 +50,12 @@ import { t } from '../../i18n'
     <div v-html="t('install.table_cli')"></div>
 
     <div class="callout" v-html="t('install.note')"></div>
+
+    <h2>{{ t('install.h2_editor') }}</h2>
+    <p v-html="t('install.editor_p')"></p>
+    <CodeBlock
+      :code="t('code.install_editor')"
+      filename="terminal"
+    />
   </div>
 </template>

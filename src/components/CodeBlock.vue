@@ -8,8 +8,9 @@ const props = defineProps({
 
 const KEYWORDS = new Set([
   'fn', 'var', 'return', 'if', 'else', 'while', 'print',
-  'break', 'continue', 'for', 'in',
-  'int', 'bool', 'void', 'true', 'false',
+  'break', 'continue', 'for', 'in', 'struct', 'impl',
+  'new', 'free', 'self',
+  'int', 'bool', 'void', 'float', 'string', 'true', 'false', 'null',
 ])
 
 function escapeHtml(s) {
@@ -49,10 +50,21 @@ function highlight(src) {
       continue
     }
 
-    // numbers
+    // numbers (integers, floats with fraction/exponent — never 0..5)
     if (/[0-9]/.test(ch)) {
       let j = i
       while (j < n && /[0-9]/.test(src[j])) j++
+      if (src[j] === '.' && /[0-9]/.test(src[j + 1])) {
+        j++
+        while (j < n && /[0-9]/.test(src[j])) j++
+        if (src[j] === 'e' || src[j] === 'E') {
+          const k = j + 1
+          if (/[0-9]/.test(src[k])) {
+            j = k
+            while (j < n && /[0-9]/.test(src[j])) j++
+          }
+        }
+      }
       out.push(`<span class="tok-num">${src.slice(i, j)}</span>`)
       i = j
       continue
@@ -64,9 +76,9 @@ function highlight(src) {
       while (j < n && /[A-Za-z0-9_]/.test(src[j])) j++
       const word = src.slice(i, j)
       if (KEYWORDS.has(word)) {
-        if (word === 'int' || word === 'bool' || word === 'void') {
+        if (word === 'int' || word === 'bool' || word === 'void' || word === 'float' || word === 'string') {
           out.push(`<span class="tok-type">${word}</span>`)
-        } else if (word === 'true' || word === 'false') {
+        } else if (word === 'true' || word === 'false' || word === 'null') {
           out.push(`<span class="tok-bool">${word}</span>`)
         } else {
           out.push(`<span class="tok-kw">${word}</span>`)

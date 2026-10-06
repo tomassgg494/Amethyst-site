@@ -50,6 +50,14 @@ import { t } from '../../i18n'
     />
     <ul v-html="t('expr.calls_list')"></ul>
 
+    <h2>{{ t('expr.h2_builtins') }}</h2>
+    <p v-html="t('expr.builtins_p')"></p>
+    <CodeBlock
+      :code="t('code.expr_builtins')"
+      filename="builtins.amt"
+    />
+    <ul v-html="t('expr.builtins_list')"></ul>
+
     <h2>{{ t('expr.h2_index') }}</h2>
     <CodeBlock
       :code="t('code.expr_index')"
@@ -63,6 +71,13 @@ import { t } from '../../i18n'
     <CodeBlock
       :code="t('code.expr_field')"
       filename="field.amt"
+    />
+
+    <h2>{{ t('expr.h2_mcall') }}</h2>
+    <p v-html="t('expr.mcall_p')"></p>
+    <CodeBlock
+      :code="t('code.expr_mcall')"
+      filename="method.amt"
     />
 
     <h2>{{ t('expr.h2_strings') }}</h2>
